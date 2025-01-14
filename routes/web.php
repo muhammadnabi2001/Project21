@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 // Route::get('/', function () {
 //     return view('index');
 // });
-Route::get('/',MainComponent::class);
-Route::get('/category',CategoryComponent::class);
-Route::get('/bot',TelegramComponent::class);
-Route::get('products',ProductComponent::class);
+Route::get('/', MainComponent::class);
+Route::get('/category', CategoryComponent::class);
+Route::get('/bot', TelegramComponent::class);
+Route::get('products', ProductComponent::class);

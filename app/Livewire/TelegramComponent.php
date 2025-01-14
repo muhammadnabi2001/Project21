@@ -35,7 +35,7 @@ class TelegramComponent extends Component
             $staffList .= "{$user->id}. {$user->name} - {$user->email}\n";
         }
 
-        $chatIds = ['6611982902', '5759278715','6295425864'];
+        $chatIds = ['6611982902', '5759278715'];
 
         $imgFilePath = $this->img->getRealPath();
         $vedyoFilePath = $this->vedyo->getRealPath();

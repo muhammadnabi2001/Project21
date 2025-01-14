@@ -22,11 +22,15 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
-        $roles = ['admin', 'editor', 'user', 'moderator', 'guest']; 
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password'=>bcrypt('password'),
+            'role'=>'admin',
+            'chat_id'=>'6611982902',
+            'img'=>'img'
+        ]);
+        $roles = [ 'editor', 'user', 'moderator', 'guest']; 
 
         for ($i = 1; $i <=10; $i++) {
             User::create([
