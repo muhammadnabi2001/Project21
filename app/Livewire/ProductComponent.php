@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Livewire\WithFileUploads;
 use App\Models\Atrebute;
 use App\Models\Category;
 use App\Models\Character;
@@ -9,9 +10,9 @@ use App\Models\Option;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-
 class ProductComponent extends Component
 {
+    use WithFileUploads;
     use WithPagination;
     protected $paginationTheme = 'bootstrap';
     public $check;

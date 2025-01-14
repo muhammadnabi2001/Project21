@@ -58,21 +58,40 @@ class LastController extends Controller
 
         return true;
     }
-    private function createUser($chat_id)
-    {
-        $step = Step::where('chat_id', $chat_id)->first();
 
-        User::create([
-            'name' => $step->name,
-            'email' => $step->email,
-            'password' => $step->password,
-            'chat_id' => $chat_id,
-            'role' => 'user',
-        ]);
-    }
     public function store(string $text, int $chat_id)
     {
         $token = "https://api.telegram.org/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw";
+        if ($text == '/profile') {
+            $foydalanuvchi = User::where('chat_id', $chat_id)->first();
+            if ($foydalanuvchi) {
+                $imgPath = $foydalanuvchi->img;
+                $imgUrl = asset('storage/' . $imgPath);
+        
+                if (Storage::disk('public')->exists($imgPath)) {
+                    Http::post($token . '/sendMessage', [
+                        'chat_id' => $chat_id,
+                        // 'photo' => $imgUrl, 
+                        'caption' => "Sizning ma'lumotlaringiz:\nName: {$foydalanuvchi->name}\nEmail: {$foydalanuvchi->email}",
+                        'parse_mode' => 'HTML',
+                    ]);
+                } else {
+                
+                    Http::post($token . '/sendMessage', [
+                        'chat_id' => $chat_id,
+                        'text' => "Sizning ma'lumotlaringiz:\nName: {$foydalanuvchi->name}\nEmail: {$foydalanuvchi->email}\n(Hozircha profilingiz uchun rasm mavjud emas)",
+                        'parse_mode' => 'HTML',
+                    ]);
+                }
+            } else {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => "Siz hali ro'yxatdan o'tmagansiz",
+                ]);
+            }
+        }
+        
         if ($text == '/start') {
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
@@ -199,7 +218,7 @@ class LastController extends Controller
                     'text' => 'tasdiqlash code xato kiritildi'
                 ]);
             }
-        } elseif($step->step !='begin') {
+        } elseif ($text != '/start' && $text !='/profile') {
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -228,7 +247,6 @@ class LastController extends Controller
 
                 if ($fileId) {
                     $response = Http::get("https://api.telegram.org/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw/getFile?file_id=" . $fileId);
-
                     if ($response->ok()) {
 
                         $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
@@ -239,10 +257,11 @@ class LastController extends Controller
                         }
 
                         if (in_array(strtolower($fileExtension), $allowedExtensions)) {
-                            $fileUrl = "https://api.telegram.org/file/bot8189554946:AAHJDfN16ghjTkjOkG_wcx1z8mHrxz4z6cQ/" . $filePath;
+                            $fileUrl = "https://api.telegram.org/file/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw/" . $filePath;
+
                             $fileContents = Http::get($fileUrl)->body();
 
-                            $fileName = 'telegram_photos/' . date("Y-m-d") . '_' . time() . '.' . $fileExtension;
+                            $fileName = 'rasmlar/' . date("Y-m-d") . '_' . time() . '.' . $fileExtension;
                             Storage::disk('public')->put($fileName, $fileContents);
                             $step = Step::where('chat_id', $chat_id)->first();
                             if ($step->step == 'photo') {
@@ -288,7 +307,7 @@ class LastController extends Controller
                         'chat_id' => '6611982902',
                         'text' => $res->chat_id
                     ]);
-                    
+
                     $this->store("Sizning profilingiz admin tomonidan tasdiqlandi! Endi tizimdan foydalanishingiz mumkin.", $call_id);
                     $this->store("Foydalanuvchi muvaffaqiyatli tasdiqlandi.", User::where('role', 'admin')->first()->chat_id);
                     User::create([
@@ -298,7 +317,7 @@ class LastController extends Controller
                         'chat_id' => $res->chat_id,
                         'img' => $res->img,
                         'status' => 1,
-                        'role'=>'user'
+                        'role' => 'user'
                     ]);
                     return;
                 }

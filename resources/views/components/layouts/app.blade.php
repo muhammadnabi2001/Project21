@@ -55,9 +55,9 @@
 
             <!-- Nav Item - Charts -->
             <li class="nav-item">
-                <a class="nav-link" href="/products">
+                <a class="nav-link" href="/meal">
                     <i class="fas fa-fw fa-chart-area"></i>
-                    <span>Products</span></a>
+                    <span>Meals</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/category">

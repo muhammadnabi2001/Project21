@@ -162,5 +162,37 @@ class TelegramBotController extends Controller
         // } catch (Exception $e) {
         //     return response()->json(['status' => 'error: ' . $e->getMessage()], 400);
         // }
+
+
+
+
+
+        if ($photo) {
+            $fileId = end($photo)['file_id'] ?? null;
+
+            if ($fileId) {
+                $response = Http::get("https://api.telegram.org/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw/getFile?file_id=" . $fileId);
+
+                if ($response->ok()) {
+                    $filePath = $response->json()['result']['file_path'];
+                    $fileUrl = "https://api.telegram.org/file/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw/" . $filePath;
+
+                    $fileContents = Http::get($fileUrl)->body();
+
+                    $fileExtension = pathinfo($filePath, PATHINFO_EXTENSION);
+
+                    $fileName = 'rasmlar/' . date("Y-m-d") . '_' . time() . '.' . $fileExtension;
+                    Storage::disk('public')->put($fileName, $fileContents);
+
+                    Log::info("Rasm saqlandi: " . $fileName);
+
+                    return response()->json(['status' => 'success', 'file' => $fileName], 200);
+                } else {
+                    Log::error("Faylni olishda xato: " . $response->body());
+                }
+            }
+        }
+
+
     }
 }
