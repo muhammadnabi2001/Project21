@@ -74,6 +74,27 @@ class LastController extends Controller
     {
         $token = "https://api.telegram.org/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw";
         if ($text == '/start') {
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'chat_id' => $chat_id,
+                'text' => "Iltimos birini tanlang",
+                'reply_markup' => json_encode([
+                    'keyboard' => [
+                        [
+                            ['text' => 'Login', 'callback_data' => "login"],
+                            ['text' => 'Register', 'callback_data' => "register"],
+                        ],
+
+                    ],
+                    'resize_keyboard' => true
+                ])
+            ]);
+            Step::updateOrCreate(
+                ['chat_id' => $chat_id],
+                ['step' => 'begin']
+            );
+        }
+        if ($text == 'Register') {
             Step::updateOrCreate(
                 ['chat_id' => $chat_id],
                 ['step' => 'name']
@@ -157,7 +178,7 @@ class LastController extends Controller
                     'text' => 'Password tug\'g\'ri kiritildi adminni javobini kuting!!!'
 
                 ]);
-                $step->update(['step'=>'success']);
+                $step->update(['step' => 'success']);
                 Http::post($token . '/sendMessage', [
                     'parse_mode' => 'HTML',
                     'chat_id' => '6611982902',
@@ -178,7 +199,7 @@ class LastController extends Controller
                     'text' => 'tasdiqlash code xato kiritildi'
                 ]);
             }
-        } else {
+        } elseif($step->step !='begin') {
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -259,7 +280,7 @@ class LastController extends Controller
                 $calldata = $call['data'];
                 $call_id = Str::after($calldata, 'confirm_');
                 $res = Step::where('chat_id', $call_id)->first();
-                
+
 
                 if ($res) {
                     Http::post($token . '/sendMessage', [
@@ -267,58 +288,30 @@ class LastController extends Controller
                         'chat_id' => '6611982902',
                         'text' => $res->chat_id
                     ]);
-                    $this->store( "Sizning profilingiz admin tomonidan tasdiqlandi! Endi tizimdan foydalanishingiz mumkin.",$call_id);
                     
-                    
-                    $this->store( "Foydalanuvchi muvaffaqiyatli tasdiqlandi.",User::where('role', 'admin')->first()->chat_id);
+                    $this->store("Sizning profilingiz admin tomonidan tasdiqlandi! Endi tizimdan foydalanishingiz mumkin.", $call_id);
+                    $this->store("Foydalanuvchi muvaffaqiyatli tasdiqlandi.", User::where('role', 'admin')->first()->chat_id);
                     User::create([
-                        'chat_id' => $res->chat_id,
                         'name' => $res->name,
                         'email' => $res->email,
                         'password' => $res->password,
+                        'chat_id' => $res->chat_id,
                         'img' => $res->img,
-                        'status' => 1
+                        'status' => 1,
+                        'role'=>'user'
                     ]);
-
                     return;
                 }
                 if (Str::startsWith($calldata, 'cancel_')) {
                     $call_id = Str::after($calldata, 'cancel_');
-                    $user = User::where('chat_id', $call_id)->first();
-
-                    if ($user) {
-                        $user->delete();
-                        $this->store($call_id, "Sizning profilingiz admin tomonidan bekor qilindi.");
-                        $this->store(User::where('role', 'admin')->first()->chat_id, "Foydalanuvchi muvaffaqiyatli o'chirildi.");
-                    } else {
-                        $this->store(User::where('role', 'admin')->first()->chat_id, "Foydalanuvchini topib bo'lmadi.");
+                    $u = Step::where('chat_id', $call_id)->first();
+                    if ($u) {
+                        $u->delete();
                     }
-                    return;
-                }
-                if (Str::startsWith($calldata, 'cancel_')) {
-                    $call_id = Str::after($calldata, 'cancel_');
-                    $user = User::where('chat_id', $call_id)->first();
 
-                    if ($user) {
-                        $user->delete();
-                        $this->store("Sizning profilingiz admin tomonidan bekor qilindi.", $call_id);
-                        $this->store(User::where('role', 'admin')->first()->chat_id, "Foydalanuvchi muvaffaqiyatli o'chirildi.");
-                    } else {
-                        $this->store(User::where('role', 'admin')->first()->chat_id, "Foydalanuvchini topib bo'lmadi.");
-                    }
-                    return;
-                }
-                if (Str::startsWith($calldata, 'cancel_')) {
-                    $call_id = Str::after($calldata, 'cancel_');
-                    $user = User::where('chat_id', $call_id)->first();
 
-                    if ($user) {
-                        $user->delete();
-                        $this->store($call_id, "Sizning profilingiz admin tomonidan bekor qilindi.");
-                        $this->store(User::where('role', 'admin')->first()->chat_id, "Foydalanuvchi muvaffaqiyatli o'chirildi.");
-                    } else {
-                        $this->store(User::where('role', 'admin')->first()->chat_id, "Foydalanuvchini topib bo'lmadi.");
-                    }
+                    $this->store("Sizning profilingiz admin tomonidan bekor qilindi.", $call_id);
+                    $this->store("Foydalanuvchi muvaffaqiyatli o'chirildi.", User::where('role', 'admin')->first()->chat_id);
                     return;
                 }
             }

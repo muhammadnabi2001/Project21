@@ -20,7 +20,7 @@ return new class extends Migration
             $table->bigInteger('chat_id')->unique();
             $table->string('img')->nullable();
             $table->boolean('status')->default(1);
-            $table->string('role');
+            $table->string('role')->default('user');
             $table->rememberToken();
             $table->timestamps();
         });
