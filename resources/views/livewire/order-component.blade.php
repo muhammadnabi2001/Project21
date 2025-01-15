@@ -43,9 +43,14 @@
     
                 <!-- Manzil kiritish -->
                 <div class="form-group mt-4">
-                    <label for="locationInput" class="form-label">Manzil:</label>
-                    <input type="text" id="locationInput" class="form-control" wire:model="location" placeholder="Manzilni kiriting...">
-                    @error('location') <span class="text-danger">{{ $message }}</span> @enderror
+                    <label for="locationInput" class="form-label">Manzil Latitude</label>
+                    <input type="text" id="locationInput" class="form-control" wire:model="latitude" placeholder="Manzilni Latitude...">
+                    @error('latitude') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group mt-4">
+                    <label for="locationInput" class="form-label">Manzil Longitude</label>
+                    <input type="text" id="locationInput" class="form-control" wire:model="longitude" placeholder="Manzilni Longitude...">
+                    @error('longitude') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
     
                 <!-- Tasdiqlash tugmalari -->

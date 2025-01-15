@@ -65,6 +65,11 @@
                     <span>Category</span></a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="/orders">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Orders</span></a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="/bot">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Bot</span></a>

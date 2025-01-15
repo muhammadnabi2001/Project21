@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\OrderEvent;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendMessage;
+use App\Models\Order;
 use App\Models\Step;
 use App\Models\User;
 use App\Models\Verification;
@@ -67,7 +69,7 @@ class LastController extends Controller
             if ($foydalanuvchi) {
                 $imgPath = $foydalanuvchi->img;
                 $imgUrl = asset('storage/' . $imgPath);
-        
+
                 if (Storage::disk('public')->exists($imgPath)) {
                     Http::post($token . '/sendMessage', [
                         'chat_id' => $chat_id,
@@ -76,7 +78,7 @@ class LastController extends Controller
                         'parse_mode' => 'HTML',
                     ]);
                 } else {
-                
+
                     Http::post($token . '/sendMessage', [
                         'chat_id' => $chat_id,
                         'text' => "Sizning ma'lumotlaringiz:\nName: {$foydalanuvchi->name}\nEmail: {$foydalanuvchi->email}\n(Hozircha profilingiz uchun rasm mavjud emas)",
@@ -91,7 +93,7 @@ class LastController extends Controller
                 ]);
             }
         }
-        
+
         if ($text == '/start') {
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
@@ -218,7 +220,7 @@ class LastController extends Controller
                     'text' => 'tasdiqlash code xato kiritildi'
                 ]);
             }
-        } elseif ($text != '/start' && $text !='/profile') {
+        } elseif ($text != '/start' && $text != '/profile') {
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -319,6 +321,27 @@ class LastController extends Controller
                         'status' => 1,
                         'role' => 'user'
                     ]);
+                    return;
+                }
+                if (Str::startsWith($calldata, 'tasdiqlash_')) {
+
+                    $call_id = Str::after($calldata, 'tasdiqlash_');
+                    $order = Order::where('id', $call_id)->first();
+                    $order->update(['status' => 'accepted']);
+                    broadcast(new OrderEvent($order));
+                    $this->store("Zakas muvaffaqiyatli tasdiqladingiz", $order->user->chat_id);
+                    $this->store("Zakas ma'sul tomonidan tasdiqlandi", User::where('role', 'admin')->first()->chat_id);
+
+                    return;
+                }
+                if (Str::startsWith($calldata, 'qaytarish_')) {
+                    $call_id = Str::after($calldata, 'qaytarish_');
+                    $order = Order::findorFail($call_id);
+
+                    $order->update(['status' => 'rejected']);
+                    broadcast(new OrderEvent($order));
+                    $this->store("Siz zakasni muvvafaqiyatli qaytardingiz", $order->user->chat_id);
+                    $this->store("Zakas ma'sul tomonidan qaytarildi", User::where('role', 'admin')->first()->chat_id);
                     return;
                 }
                 if (Str::startsWith($calldata, 'cancel_')) {

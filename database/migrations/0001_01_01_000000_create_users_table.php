@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->bigInteger('chat_id')->unique();
+            $table->bigInteger('chat_id')->unique()->nullable();
             $table->string('img')->nullable();
             $table->boolean('status')->default(1);
             $table->string('role')->default('user');
