@@ -60,6 +60,38 @@ class DeveloperbotController extends Controller
 
         return true;
     }
+    private function latitude($latitude)
+    {
+        if (empty($latitude)) {
+            return 'Latitude maydoni bo\'sh!';
+        }
+
+        if (!is_numeric($latitude)) {
+            return 'Latitude faqat raqam bo\'lishi kerak!';
+        }
+
+        if ($latitude < -90 || $latitude > 90) {
+            return 'Latitude qiymati -90 va 90 orasida bo\'lishi kerak!';
+        }
+
+        return true;
+    }
+    private function longitude($longitude)
+    {
+        if (empty($longitude)) {
+            return 'Longitude maydoni bo\'sh!';
+        }
+
+        if (!is_numeric($longitude)) {
+            return 'Longitude faqat raqam bo\'lishi kerak!';
+        }
+
+        if ($longitude < -180 || $longitude > 180) {
+            return 'Longitude qiymati -180 va 180 orasida bo\'lishi kerak!';
+        }
+
+        return true;
+    }
 
     public function store(string $text, int $chat_id)
     {
@@ -96,17 +128,30 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
+        $step = Remember::where('chat_id', $chat_id)->first();
         if ($text == 'Employee of Company') {
+            $companies = Company::all();
+            $step->update(['step' => 'choose_company']);
+
+            $buttons = [];
+            foreach ($companies as $company) {
+                $buttons[] = [
+                    ['text' => $company->name, 'callback_data' => 'company_' . $company->id]
+                ];
+            }
+
+            $keyboard = [
+                'inline_keyboard' => $buttons
+            ];
 
             $response = Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
-                'text' => "Siz register by companyni tanladingiz ni tanladingiz",
-
+                'text' => "Iltimos, kompaniyani tanlang:",
+                'reply_markup' => json_encode($keyboard)
             ]);
         }
-        $step = Remember::where('chat_id', $chat_id)->first();
-        
+
         if ($step && $step->step == 'name') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
@@ -119,6 +164,25 @@ class DeveloperbotController extends Controller
             }
 
             $step->update(['step' => 'email', 'name' => $text]);
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'chat_id' => $chat_id,
+                'text' => 'Ismingiz qabul qilindi endi emailingizni kiriting>>>'
+            ]);
+            return;
+        }
+        if ($step && $step->step == 'username') {
+            $validatedName = $this->validateName($text);
+            if ($validatedName !== true) {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => $validatedName
+                ]);
+                return;
+            }
+
+            $step->update(['step' => 'useremail', 'name' => $text]);
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -145,6 +209,25 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
+        if ($step && $step->step == 'useremail') {
+            $validatedEmail = $this->validateEmail($text);
+            if ($validatedEmail !== true) {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => $validatedEmail
+                ]);
+                return;
+            }
+
+            $step->update(['step' => 'userpassword', 'email' => $text]);
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'chat_id' => $chat_id,
+                'text' => 'Emailingiz qabul qilindi. Endi parolingizni kiriting>>>'
+            ]);
+            return;
+        }
         if ($step && $step->step == 'password') {
             $validatedPassword = $this->validatePassword($text);
             if ($validatedPassword !== true) {
@@ -164,44 +247,7 @@ class DeveloperbotController extends Controller
             $step->update(['step' => 'photo', 'password' => bcrypt($text)]);
             return;
         }
-        if ($step && $step->step == 'companyname') {
-            $validatedName = $this->validateName($text);
-            if ($validatedName !== true) {
-                Http::post($token . '/sendMessage', [
-                    'parse_mode' => 'HTML',
-                    'chat_id' => $chat_id,
-                    'text' => $validatedName
-                ]);
-                return;
-            }
-            $step->update(['step' => 'companyemail', 'companyname' => $text]);
-            Http::post($token . '/sendMessage', [
-                'parse_mode' => 'HTML',
-                'chat_id' => $chat_id,
-                'text' => 'Companiyani nomi qabul qilindi endi company uchun emailni kiriting>>>'
-            ]);
-            return;
-        }
-        if ($step && $step->step == 'companyemail') {
-            $validatedEmail = $this->validateEmail($text);
-            if ($validatedEmail !== true) {
-                Http::post($token . '/sendMessage', [
-                    'parse_mode' => 'HTML',
-                    'chat_id' => $chat_id,
-                    'text' => $validatedEmail
-                ]);
-                return;
-            }
-
-            $step->update(['step' => 'companypassword', 'companyemail' => $text]);
-            Http::post($token . '/sendMessage', [
-                'parse_mode' => 'HTML',
-                'chat_id' => $chat_id,
-                'text' => 'Companiya uchun email qabul qilindi. Endi companyemail uchun parolni kiriting>>>'
-            ]);
-            return;
-        }
-        if ($step && $step->step == 'companypassword') {
+        if ($step && $step->step == 'userpassword') {
             $validatedPassword = $this->validatePassword($text);
             if ($validatedPassword !== true) {
                 Http::post($token . '/sendMessage', [
@@ -215,12 +261,68 @@ class DeveloperbotController extends Controller
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
-                'text' => 'Company uchun parol qabul qilindi endi companya uchun rasmni kiriting>>>'
+                'text' => 'parol qabul qilindi endi rasmingni kiriting>>>'
             ]);
-            $step->update(['step' => 'companyimg', 'companypassword' => bcrypt($text)]);
+            $step->update(['step' => 'userphoto', 'password' => bcrypt($text)]);
             return;
         }
-       
+        if ($step && $step->step == 'companyname') {
+            $validatedName = $this->validateName($text);
+            if ($validatedName !== true) {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => $validatedName
+                ]);
+                return;
+            }
+            $step->update(['step' => 'latitude', 'companyname' => $text]);
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'chat_id' => $chat_id,
+                'text' => 'Companiyani nomi qabul qilindi endi company uchun latitude>>>'
+            ]);
+            return;
+        }
+        if ($step && $step->step == 'latitude') {
+            $validate = $this->latitude($text);
+            if ($validate !== true) {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => $validate
+                ]);
+                return;
+            }
+
+            $step->update(['step' => 'longitude', 'latitude' => $text]);
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'chat_id' => $chat_id,
+                'text' => 'Companiya uchun latitude qabul qilindi. Endi companya longitudenikiriting>>>'
+            ]);
+            return;
+        }
+        if ($step && $step->step == 'longitude') {
+            $valid = $this->longitude($text);
+            if ($valid !== true) {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => $valid
+                ]);
+                return;
+            }
+
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'chat_id' => $chat_id,
+                'text' => 'companya uchun longitude qabul qilindi endi company uchun img ni kiriting'
+            ]);
+            $step->update(['step' => 'companyimg', 'longitude' => $text]);
+            return;
+        }
+
         if ($step && $step->step == 'confirmation') {
             $verify = Verification::where('chat_id', $chat_id)->first();
             if ($verify->code == $text) {
@@ -325,6 +427,25 @@ class DeveloperbotController extends Controller
                                 ]);
                                 return;
                             }
+                            if ($step->step == 'userphoto') {
+                                $step->update(['step' => 'confirmation', 'photo' => $fileName]);
+                                $code = rand(10000, 99999);
+                                SendMessage::dispatch($step->email, $code);
+                                Verification::where('chat_id', $chat_id)->delete();
+                                Verification::create(
+                                    [
+                                        'chat_id' => $chat_id,
+                                        'code' => $code
+                                    ]
+                                );
+
+                                Http::post($token . '/sendMessage', [
+                                    'parse_mode' => 'HTML',
+                                    'chat_id' => $chat_id,
+                                    'text' => 'Sizning emailingizga tasdiqlash codi junatildi'
+                                ]);
+                                return;
+                            }
                         } else {
                             Http::post($token . '/sendMessage', [
                                 'parse_mode' => 'HTML',
@@ -336,7 +457,7 @@ class DeveloperbotController extends Controller
                 }
             }
             if ($call) {
-                $token = "https://api.telegram.org/bot8167278261:AAHYALYcMj1B33jZcm0wOHnVX9mnVk2Slbw";
+                $token = "https://api.telegram.org/bot7911495785:AAGOiDZWQUgbW2P1ajFbsCRGbiLW9OWsdsI";
 
                 $calldata = $call['data'];
                 $call_id = Str::after($calldata, 'confirm_');
@@ -344,19 +465,19 @@ class DeveloperbotController extends Controller
 
 
                 if ($res) {
-                    Http::post($token . '/sendMessage', [
-                        'parse_mode' => 'HTML',
-                        'chat_id' => '6611982902',
-                        'text' => $res->chat_id
-                    ]);
+                    // Http::post($token . '/sendMessage', [
+                    //     'parse_mode' => 'HTML',
+                    //     'chat_id' => '6611982902',
+                    //     'text' => $res->chat_id
+                    // ]);
 
                     $this->store("Sizning profilingiz admin tomonidan tasdiqlandi! Endi tizimdan foydalanishingiz mumkin.", $call_id);
                     $this->store("Foydalanuvchi muvaffaqiyatli tasdiqlandi.", User::where('role', 'admin')->first()->chat_id);
                     $Company = Company::create([
-                        'name'=>$res->companyname,
-                        'img'=>$res->companyimg,
-                        'email'=>$res->companyemail,
-                        'password'=>$res->companypassword
+                        'name' => $res->companyname,
+                        'img' => $res->companyimg,
+                        'latitude' => $res->latitude,
+                        'longitude' => $res->longitude
                     ]);
                     Worker::create([
                         'name' => $res->name,
@@ -382,6 +503,20 @@ class DeveloperbotController extends Controller
                     $this->store("Sizning profilingiz admin tomonidan bekor qilindi.", $call_id);
                     $this->store("Foydalanuvchi muvaffaqiyatli o'chirildi.", User::where('role', 'admin')->first()->chat_id);
                     return;
+                }
+                if (Str::startsWith($calldata, 'company_')) {
+                    $companyId = Str::after($calldata, 'company_');
+                    $chatId = $call['message']['chat']['id'];
+                    $company = Company::find($companyId);
+                    $remeber = Remember::where('chat_id', $chatId)->first();
+                    if ($company) {
+                        $response = Http::post($token . '/sendMessage', [
+                            'parse_mode' => 'HTML',
+                            'chat_id' => $chatId,
+                            'text' => "Siz \"{$company->name}\" kompaniyasini tanladingiz endi Ismingizni kiriting>>>"
+                        ]);
+                        $remeber->update(['step' => 'username', 'companyname' => $company->name]);
+                    }
                 }
             }
             Log::info('Telegram: ', $data);

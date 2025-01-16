@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('img');
             $table->string('status')->default('1');
-            $table->string('email');
-            $table->string('password');
+            $table->string('longitude');
+            $table->string('latitude');
             $table->timestamps();
         });
     }

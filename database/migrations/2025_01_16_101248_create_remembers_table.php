@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->string('img')->nullable();
             $table->string('companyname')->nullable();
-            $table->string('companyemail')->nullable();
-            $table->string('companypassword')->nullable();
+            $table->string('longitude')->nullable();
+            $table->string('latitude')->nullable();
             $table->string('companyimg')->nullable();
             $table->string('role')->default('user');
             $table->timestamps();

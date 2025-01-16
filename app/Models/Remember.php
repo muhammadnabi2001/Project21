@@ -14,8 +14,8 @@ class Remember extends Model
         'password',
         'img',
         'companyname',
-        'companyemail',
-        'companypassword',
+        'longitude',
+        'latitude',
         'companyimg',
     ];
 }

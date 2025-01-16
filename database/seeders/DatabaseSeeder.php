@@ -89,8 +89,8 @@ class DatabaseSeeder extends Seeder
         for ($i=1; $i <=10; $i++) { 
             Company::create([
                 'name'=>'Company'.$i,
-                'email'=>fake()->unique()->email(),
-                'password'=>bcrypt('password'),
+                'latitude'=>rand(1,99),
+                'longitude'=>rand(1,99),
                 'img'=>'img'.$i,
                
             ]);
