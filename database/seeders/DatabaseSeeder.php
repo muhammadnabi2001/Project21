@@ -6,10 +6,12 @@ use App\Models\Atrebute;
 use App\Models\AtrebuteCharacter;
 use App\Models\Category;
 use App\Models\Character;
+use App\Models\Company;
 use App\Models\Element;
 use App\Models\Option;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Worker;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -82,6 +84,25 @@ class DatabaseSeeder extends Seeder
             Option::create([
                 'element_id'=>rand(1,20),
                 'atrebute_character_id'=>rand(1,50)
+            ]);
+        }
+        for ($i=1; $i <=10; $i++) { 
+            Company::create([
+                'name'=>'Company'.$i,
+                'email'=>fake()->unique()->email(),
+                'password'=>bcrypt('password'),
+                'img'=>'img'.$i,
+               
+            ]);
+        }
+        for ($i=1; $i <=10; $i++) { 
+            Worker::create([
+                'name'=>fake()->name(),
+                'email'=>fake()->unique()->email(),
+                'password'=>bcrypt('password'),
+                'company_id'=>rand(1,10),
+                'role'=>$roles[array_rand($roles)],
+                'status'=>1,
             ]);
         }
     }

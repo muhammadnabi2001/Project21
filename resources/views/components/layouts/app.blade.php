@@ -70,6 +70,11 @@
                     <span>Orders</span></a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="/company">
+                    <i class="fas fa-fw fa-chart-area"></i>
+                    <span>Companies</span></a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="/bot">
                     <i class="fas fa-fw fa-chart-area"></i>
                     <span>Bot</span></a>

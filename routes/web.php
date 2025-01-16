@@ -3,6 +3,7 @@
 use App\Http\Controllers\OrderStatusController;
 use App\Http\Controllers\ProfileController;
 use App\Livewire\CategoryComponent;
+use App\Livewire\CompanyComponent;
 use App\Livewire\MainComponent;
 use App\Livewire\MealComponent;
 use App\Livewire\OrderComponent;
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/meal', MealComponent::class)->name('meal');
     Route::get('/order', OrderComponent::class);
     Route::get('/orders',[OrderStatusController::class,'index']);
+    Route::get('/company',CompanyComponent::class);
 });
 
 require __DIR__ . '/auth.php';

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BotController;
 use App\Http\Controllers\Api\BotUserController;
+use App\Http\Controllers\Api\DeveloperbotController;
 use App\Http\Controllers\Api\LastController;
 use App\Http\Controllers\Api\TelegramBotController;
 use Illuminate\Http\Request;
@@ -15,3 +16,4 @@ Route::post('/bot-send', [BotController::class, 'bot']);
 Route::post('/send-message',[TelegramBotController::class,'index']);
 Route::post('/check-bot',[BotUserController::class,'index']);
 Route::post('last-bot',[LastController::class,'index']);
+Route::post('regester-bot',[DeveloperbotController::class,'index']);
