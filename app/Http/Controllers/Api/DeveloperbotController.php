@@ -97,8 +97,13 @@ class DeveloperbotController extends Controller
     {
         $token = "https://api.telegram.org/bot7911495785:AAGOiDZWQUgbW2P1ajFbsCRGbiLW9OWsdsI";
 
+        $step = Remember::where('chat_id', $chat_id)->first();
         if ($text == '/start') {
-
+            //    $step->update(['step'=>'']);
+            Remember::updateOrCreate(
+                ['chat_id' => $chat_id],
+                ['step' => '']
+            );
             $response = Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -115,12 +120,11 @@ class DeveloperbotController extends Controller
             ]);
         }
 
-        if ($text == 'Copmany Holder') {
+        elseif ($text == 'Copmany Holder') {
             Remember::updateOrCreate(
                 ['chat_id' => $chat_id],
                 ['step' => 'name']
             );
-
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -128,11 +132,13 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        $step = Remember::where('chat_id', $chat_id)->first();
-        if ($text == 'Employee of Company') {
+        elseif ($text == 'Employee of Company') {
             $companies = Company::all();
-            $step->update(['step' => 'choose_company']);
-
+            // $step->update(['step' => 'choose_company']);
+            Remember::updateOrCreate(
+                ['chat_id' => $chat_id],
+                ['step' => 'choose_company']
+            );
             $buttons = [];
             foreach ($companies as $company) {
                 $buttons[] = [
@@ -152,7 +158,7 @@ class DeveloperbotController extends Controller
             ]);
         }
 
-        if ($step && $step->step == 'name') {
+        elseif ($step && $step->step == 'name') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
                 Http::post($token . '/sendMessage', [
@@ -171,7 +177,7 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        if ($step && $step->step == 'username') {
+        elseif ($step && $step->step == 'username') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
                 Http::post($token . '/sendMessage', [
@@ -190,7 +196,7 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        if ($step && $step->step == 'email') {
+        elseif ($step && $step->step == 'email') {
             $validatedEmail = $this->validateEmail($text);
             if ($validatedEmail !== true) {
                 Http::post($token . '/sendMessage', [
@@ -209,7 +215,7 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        if ($step && $step->step == 'useremail') {
+        elseif ($step && $step->step == 'useremail') {
             $validatedEmail = $this->validateEmail($text);
             if ($validatedEmail !== true) {
                 Http::post($token . '/sendMessage', [
@@ -228,7 +234,7 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        if ($step && $step->step == 'password') {
+        elseif ($step && $step->step == 'password') {
             $validatedPassword = $this->validatePassword($text);
             if ($validatedPassword !== true) {
                 Http::post($token . '/sendMessage', [
@@ -247,7 +253,7 @@ class DeveloperbotController extends Controller
             $step->update(['step' => 'photo', 'password' => bcrypt($text)]);
             return;
         }
-        if ($step && $step->step == 'userpassword') {
+        elseif ($step && $step->step == 'userpassword') {
             $validatedPassword = $this->validatePassword($text);
             if ($validatedPassword !== true) {
                 Http::post($token . '/sendMessage', [
@@ -266,7 +272,7 @@ class DeveloperbotController extends Controller
             $step->update(['step' => 'userphoto', 'password' => bcrypt($text)]);
             return;
         }
-        if ($step && $step->step == 'companyname') {
+        elseif ($step && $step->step == 'companyname') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
                 Http::post($token . '/sendMessage', [
@@ -284,7 +290,7 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        if ($step && $step->step == 'latitude') {
+        elseif ($step && $step->step == 'latitude') {
             $validate = $this->latitude($text);
             if ($validate !== true) {
                 Http::post($token . '/sendMessage', [
@@ -303,7 +309,7 @@ class DeveloperbotController extends Controller
             ]);
             return;
         }
-        if ($step && $step->step == 'longitude') {
+        elseif ($step && $step->step == 'longitude') {
             $valid = $this->longitude($text);
             if ($valid !== true) {
                 Http::post($token . '/sendMessage', [
@@ -321,6 +327,40 @@ class DeveloperbotController extends Controller
             ]);
             $step->update(['step' => 'companyimg', 'longitude' => $text]);
             return;
+        }
+        elseif ($step && $step->step == 'waiting') {
+            $verify = Verification::where('chat_id', $chat_id)->first();
+            if ($verify->code == $text) {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => 'Password tug\'ri kiritildi company manager tasdig\'ini kuting!!!'
+
+                ]);
+                $manager = Worker::where('company_id', $step->companyname)->first();
+                $step->update(['step' => 'success']);
+                if ($manager) {
+                    Http::post($token . '/sendMessage', [
+                        'parse_mode' => 'HTML',
+                        'chat_id' => $manager->chat_id,
+                        'text' => "User ni tasdiqlaysizmi \n Name: " . $step->name . "\n" . "Email: " . $step->email,
+                        'reply_markup' => json_encode([
+                            'inline_keyboard' => [
+                                [
+                                    ['text' => 'Tasdiqlash✅', 'callback_data' => "confirm_{$chat_id}"],
+                                    ['text' => 'Qaytarish❌', 'callback_data' => "cancel_{$chat_id}"],
+                                ],
+                            ]
+                        ])
+                    ]);
+                }
+            } else {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => 'tasdiqlash code xato kiritildi'
+                ]);
+            }
         }
 
         if ($step && $step->step == 'confirmation') {
@@ -353,7 +393,7 @@ class DeveloperbotController extends Controller
                     'text' => 'tasdiqlash code xato kiritildi'
                 ]);
             }
-        } elseif ($text != '/start' && $text != '/profile') {
+        } elseif ($text != '/start' && $text != '/profile' && $text != 'Employee of Company' && $text != 'Company Holder') {
             Http::post($token . '/sendMessage', [
                 'parse_mode' => 'HTML',
                 'chat_id' => $chat_id,
@@ -428,7 +468,7 @@ class DeveloperbotController extends Controller
                                 return;
                             }
                             if ($step->step == 'userphoto') {
-                                $step->update(['step' => 'confirmation', 'photo' => $fileName]);
+                                $step->update(['step' => 'waiting', 'photo' => $fileName]);
                                 $code = rand(10000, 99999);
                                 SendMessage::dispatch($step->email, $code);
                                 Verification::where('chat_id', $chat_id)->delete();
@@ -515,7 +555,7 @@ class DeveloperbotController extends Controller
                             'chat_id' => $chatId,
                             'text' => "Siz \"{$company->name}\" kompaniyasini tanladingiz endi Ismingizni kiriting>>>"
                         ]);
-                        $remeber->update(['step' => 'username', 'companyname' => $company->name]);
+                        $remeber->update(['step' => 'username', 'companyname' => $company->id]);
                     }
                 }
             }

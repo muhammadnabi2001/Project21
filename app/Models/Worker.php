@@ -13,6 +13,7 @@ class Worker extends Model
         'role',
         'status',
         'password',
+        'chat_id'
         
     ];
 }

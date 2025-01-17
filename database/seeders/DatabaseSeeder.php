@@ -101,6 +101,7 @@ class DatabaseSeeder extends Seeder
                 'email'=>fake()->unique()->email(),
                 'password'=>bcrypt('password'),
                 'company_id'=>rand(1,10),
+                'chat_id'=>rand(1000000000,9999999999),
                 'role'=>$roles[array_rand($roles)],
                 'status'=>1,
             ]);

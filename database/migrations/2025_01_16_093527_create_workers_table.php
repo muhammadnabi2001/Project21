@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('password');
             $table->string('role');
+            $table->bigInteger('chat_id');
             $table->string('status')->default('user');
             $table->timestamps();
         });
