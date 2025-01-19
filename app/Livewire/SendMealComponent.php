@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Company;
 use App\Models\Meal;
 use App\Models\Worker;
+use Illuminate\Support\Facades\Http;
 use Livewire\Component;
 
 class SendMealComponent extends Component
@@ -19,49 +20,34 @@ class SendMealComponent extends Component
 
     public function send()
     {
-        $workers = Worker::where('worker_id', $this->selectedcompany)
-            ->get();
-
+        $workers = Worker::where('company_id', $this->selectedcompany)->get();
         $meals = Meal::all();
 
-        $workersData = [];
+        $mealList = "";
+        $keyboard = [];
+
+        foreach ($meals as $meal) {
+            $mealList .= "{$meal->name} - {$meal->price} so'm\n";
+            $keyboard[] = [
+                ['text' => "{$meal->name}", 'callback_data' => "meal_{$meal->id}"]
+            ];
+        }
+
+        $keyboard[] = [
+            ['text' => 'Cart', 'callback_data' => 'view_cart']
+        ];
+
+        $token = "https://api.telegram.org/bot7911495785:AAGOiDZWQUgbW2P1ajFbsCRGbiLW9OWsdsI";
 
         foreach ($workers as $worker) {
-            $workerMeals = [];
-
-            foreach ($meals as $meal) {
-                $workerMeals[] = [
-                    'meal_name' => $meal->name,
-                    'price' => $meal->price,
-                    'count' => 0
-                ];
-            }
-
-            $workersData[] = [
+            Http::post($token . '/sendMessage', [
+                'parse_mode' => 'HTML',
+                'text' => "Taomlar menyusi: \n" . $mealList,
                 'chat_id' => $worker->chat_id,
-                'meals' => $workerMeals
-            ];
-
-            $this->sendMealsToWorker($worker->chat_id, $workerMeals);
+                'reply_markup' => json_encode([
+                    'inline_keyboard' => $keyboard
+                ])
+            ]);
         }
-    }
-
-    public function sendMealsToWorker($chatId, $meals)
-    {
-        $mealOptions = [];
-
-        // Ovqatlarni tanlov formatida yuborish uchun ularni o'zgartiramiz
-        foreach ($meals as $meal) {
-            $mealOptions[] = $meal['meal_name'] . ' - ' . $meal['price'] . ' so\'m';
-        }
-
-        // Telegram API orqali bot orqali xabar yuborish
-        $response = Http::post("https://api.telegram.org/bot" . env('TELEGRAM_BOT_TOKEN') . "/sendMessage", [
-            'chat_id' => $chatId,
-            'text' => "Quyidagi ovqatlarni tanlang va miqdorini kiriting:\n" . implode("\n", $mealOptions)
-        ]);
-
-        // Agar kerak bo'lsa, javobni tekshirib ko'rish
-        dd($response->json());
     }
 }

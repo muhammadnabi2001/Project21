@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\SendMessage;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Company;
+use App\Models\Meal;
 use App\Models\Remember;
 use App\Models\User;
 use App\Models\Verification;
 use App\Models\Worker;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -118,9 +122,7 @@ class DeveloperbotController extends Controller
                     'resize_keyboard' => true
                 ])
             ]);
-        }
-
-        elseif ($text == 'Copmany Holder') {
+        } elseif ($text == 'Copmany Holder') {
             Remember::updateOrCreate(
                 ['chat_id' => $chat_id],
                 ['step' => 'name']
@@ -131,8 +133,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Iltimos ismingizni kiriting>>>'
             ]);
             return;
-        }
-        elseif ($text == 'Employee of Company') {
+        } elseif ($text == 'Employee of Company') {
             $companies = Company::all();
             // $step->update(['step' => 'choose_company']);
             Remember::updateOrCreate(
@@ -156,9 +157,7 @@ class DeveloperbotController extends Controller
                 'text' => "Iltimos, kompaniyani tanlang:",
                 'reply_markup' => json_encode($keyboard)
             ]);
-        }
-
-        elseif ($step && $step->step == 'name') {
+        } elseif ($step && $step->step == 'name') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
                 Http::post($token . '/sendMessage', [
@@ -176,8 +175,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Ismingiz qabul qilindi endi emailingizni kiriting>>>'
             ]);
             return;
-        }
-        elseif ($step && $step->step == 'username') {
+        } elseif ($step && $step->step == 'username') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
                 Http::post($token . '/sendMessage', [
@@ -195,8 +193,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Ismingiz qabul qilindi endi emailingizni kiriting>>>'
             ]);
             return;
-        }
-        elseif ($step && $step->step == 'email') {
+        } elseif ($step && $step->step == 'email') {
             $validatedEmail = $this->validateEmail($text);
             if ($validatedEmail !== true) {
                 Http::post($token . '/sendMessage', [
@@ -214,8 +211,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Emailingiz qabul qilindi. Endi parolingizni kiriting>>>'
             ]);
             return;
-        }
-        elseif ($step && $step->step == 'useremail') {
+        } elseif ($step && $step->step == 'useremail') {
             $validatedEmail = $this->validateEmail($text);
             if ($validatedEmail !== true) {
                 Http::post($token . '/sendMessage', [
@@ -233,8 +229,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Emailingiz qabul qilindi. Endi parolingizni kiriting>>>'
             ]);
             return;
-        }
-        elseif ($step && $step->step == 'password') {
+        } elseif ($step && $step->step == 'password') {
             $validatedPassword = $this->validatePassword($text);
             if ($validatedPassword !== true) {
                 Http::post($token . '/sendMessage', [
@@ -252,8 +247,7 @@ class DeveloperbotController extends Controller
             ]);
             $step->update(['step' => 'photo', 'password' => bcrypt($text)]);
             return;
-        }
-        elseif ($step && $step->step == 'userpassword') {
+        } elseif ($step && $step->step == 'userpassword') {
             $validatedPassword = $this->validatePassword($text);
             if ($validatedPassword !== true) {
                 Http::post($token . '/sendMessage', [
@@ -271,8 +265,7 @@ class DeveloperbotController extends Controller
             ]);
             $step->update(['step' => 'userphoto', 'password' => bcrypt($text)]);
             return;
-        }
-        elseif ($step && $step->step == 'companyname') {
+        } elseif ($step && $step->step == 'companyname') {
             $validatedName = $this->validateName($text);
             if ($validatedName !== true) {
                 Http::post($token . '/sendMessage', [
@@ -289,8 +282,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Companiyani nomi qabul qilindi endi company uchun latitude>>>'
             ]);
             return;
-        }
-        elseif ($step && $step->step == 'latitude') {
+        } elseif ($step && $step->step == 'latitude') {
             $validate = $this->latitude($text);
             if ($validate !== true) {
                 Http::post($token . '/sendMessage', [
@@ -308,8 +300,7 @@ class DeveloperbotController extends Controller
                 'text' => 'Companiya uchun latitude qabul qilindi. Endi companya longitudenikiriting>>>'
             ]);
             return;
-        }
-        elseif ($step && $step->step == 'longitude') {
+        } elseif ($step && $step->step == 'longitude') {
             $valid = $this->longitude($text);
             if ($valid !== true) {
                 Http::post($token . '/sendMessage', [
@@ -327,8 +318,7 @@ class DeveloperbotController extends Controller
             ]);
             $step->update(['step' => 'companyimg', 'longitude' => $text]);
             return;
-        }
-        elseif ($step && $step->step == 'waiting') {
+        } elseif ($step && $step->step == 'waiting') {
             $verify = Verification::where('chat_id', $chat_id)->first();
             if ($verify->code == $text) {
                 Http::post($token . '/sendMessage', [
@@ -359,6 +349,42 @@ class DeveloperbotController extends Controller
                     'parse_mode' => 'HTML',
                     'chat_id' => $chat_id,
                     'text' => 'tasdiqlash code xato kiritildi'
+                ]);
+            }
+        } elseif ($step && $step->step == 'count') {
+            $meals = Meal::all();
+            $mealList = "";
+            $keyboard = [];
+
+            foreach ($meals as $meal) {
+                $mealList .= "{$meal->name} - {$meal->price} so'm\n";
+                $keyboard[] = [
+                    ['text' => "{$meal->name}", 'callback_data' => "meal_{$meal->id}"]
+                ];
+            }
+
+            $keyboard[] = [
+                ['text' => 'Cart', 'callback_data' => 'view_cart']
+            ];
+            if (is_numeric($text)) {
+                $worker=Worker::where('chat_id',$chat_id)->first();
+               $cart=Cart::where('worker_id',$worker->id)->first();
+              
+               $cart->update(['summa'=>$text]);
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => "Taomlar menyus: \n" . $mealList,
+                    'reply_markup' => json_encode([
+                        'inline_keyboard' => $keyboard
+                    ])
+                ]);
+            } else {
+                Http::post($token . '/sendMessage', [
+                    'parse_mode' => 'HTML',
+                    'chat_id' => $chat_id,
+                    'text' => "count miqodiri xato kiritildi",
+                    
                 ]);
             }
         }
@@ -558,6 +584,100 @@ class DeveloperbotController extends Controller
                         $remeber->update(['step' => 'username', 'companyname' => $company->id]);
                     }
                 }
+                if (Str::startsWith($calldata, 'meal_')) {
+                    $chatId = $call['message']['chat']['id'];
+                    $messageId = $call['message']['message_id'];
+                    $mealId = Str::after($calldata, 'meal_');
+
+                    $meal = Meal::findOrFail($mealId);
+
+                    $text = "<b>{$meal->name}</b>\n";
+                    $text .= "Narxi: {$meal->price} so'm\n";
+                    $text .= "Tavsif: {$meal->description}\n\n";
+                    $text .= "Savatga qo‘shish yoki boshqa harakatlarni amalga oshirish uchun tugmani bosing.";
+
+                    $keyboard = [
+                        [
+                            ['text' => "Qo'shish", 'callback_data' => "add_{$meal->id}"]
+                        ],
+                        [
+                            ['text' => "Orqaga", 'callback_data' => "back_to_menu"]
+                        ],
+                    ];
+
+                    $response = Http::post($token . '/editMessageText', [
+                        'chat_id' => $chatId,
+                        'message_id' => $messageId,
+                        'parse_mode' => 'HTML',
+                        'text' => $text,
+                        'reply_markup' => json_encode(['inline_keyboard' => $keyboard]),
+                    ]);
+                }
+                if (Str::startsWith($calldata, 'add_')) {
+                    $chatId = $call['message']['chat']['id'];
+                    $messageId = $call['message']['message_id'];
+                    $mealId = Str::after($calldata, 'add_');
+                    $meal = Meal::findorFail($mealId);
+                    $worker = Worker::where('chat_id', $chatId)->first();
+                    $cart = Cart::create([
+                        'name' => $meal->name,
+                        'worker_id' => $worker->id,
+                        'date' => Carbon::now()->format('Y-m-d'),
+                        'summa' => 0
+                    ]);
+                    CartItem::create([
+                        'cart_id' => $cart->id,
+                        'meal_id' => $mealId
+                    ]);
+                    Remember::updateOrCreate(
+                        ['chat_id' => $chatId],
+                        ['step' => 'count']
+                    );
+                    $response = Http::post($token . '/SendMessage', [
+                        'chat_id' => $chatId,
+                        'parse_mode' => 'HTML',
+                        'text' => 'Endi miqdorini kiriting>>>',
+                    ]);
+                }
+                if(Str::startsWith($calldata, 'view_cart'))
+                {
+                    $chatId = $call['message']['chat']['id'];
+                    $messageId = $call['message']['message_id'];
+                    $response = Http::post($token . '/SendMessage', [
+                        'chat_id' => $chatId,
+                        'parse_mode' => 'HTML',
+                        'text' => 'cart button bosildi',
+                    ]);
+                   $cartItems = Cart::all();
+                    if ($cartItems->isEmpty()) {
+                        Http::post($token . '/sendMessage', [
+                            'chat_id' => $chatId,
+                            'parse_mode' => 'HTML',
+                            'text' => "Sizning savatchangiz bo'sh. Iltimos, taomlarni tanlang.",
+                        ]);
+                    } else {
+                        $cartText = "Savatchangizdagi taomlar:\n";
+                
+                        foreach ($cartItems as $item) {
+                            $cartText .= "- {$item->name}: {$item->summa} ta\n";
+                        }
+                
+                
+                        Http::post($token . '/sendMessage', [
+                            'chat_id' => $chatId,
+                            'parse_mode' => 'HTML',
+                            'text' => $cartText,
+                            'reply_markup' => json_encode([
+                            'inline_keyboard' => [
+                                [
+                                    ['text' => 'Zakas berish', 'callback_data' => "zakas"],
+                                    ['text' => 'Orqaga', 'callback_data' => "ortga"],
+                                ],
+                            ]
+                        ])
+                        ]);
+                    }
+                }
             }
             Log::info('Telegram: ', $data);
             return response()->json(['status' => 'success'], 200);
@@ -565,4 +685,34 @@ class DeveloperbotController extends Controller
             Log::error('Telegram webhook error: ' . $e->getMessage());
         }
     }
+    // private function sendMenu($chatId, $token)
+    // {
+    //     $meals = Meal::all();
+
+    //     // Taomlar menyusi va tugmalarni shakllantirish
+    //     $mealList = "";
+    //     $keyboard = [];
+
+    //     foreach ($meals as $meal) {
+    //         $mealList .= "{$meal->name} - {$meal->price} so'm\n";
+    //         $keyboard[] = [
+    //             ['text' => "{$meal->name}", 'callback_data' => "meal_{$meal->id}"]
+    //         ];
+    //     }
+
+    //     $keyboard[] = [
+    //         ['text' => 'Cart', 'callback_data' => 'view_cart']
+    //     ];
+
+    //     // Xabarni qayta yangilash yoki yuborish
+    //     Http::post($token . '/editMessageText', [
+    //         'chat_id' => $chatId,
+    //         'message_id' => $messageId, // Xabar ID'si
+    //         'parse_mode' => 'HTML',
+    //         'text' => "Taomlar menyusi: \n" . $mealList,
+    //         'reply_markup' => json_encode([
+    //             'inline_keyboard' => $keyboard
+    //         ])
+    //     ]);
+    // }
 }

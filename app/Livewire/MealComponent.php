@@ -57,14 +57,14 @@ class MealComponent extends Component
 
     public function render()
     {
-        $this->categories=Cache::remember('check',60,function():Collection{
-            return Category::all();
-        });
-       // $this->categories = Category::all();
-        //$meals = Meal::orderBy('id', 'desc')->paginate(10);
-        $meals = Cache::remember('meals_page_' . request('page', 1), 60, function () {
-            return Meal::orderBy('id', 'desc')->paginate(10);
-        });
+        // $this->categories=Cache::remember('check',60,function():Collection{
+        //     return Category::all();
+        // });
+       $this->categories = Category::all();
+        $meals = Meal::orderBy('id', 'desc')->paginate(10);
+        // $meals = Cache::remember('meals_page_' . request('page', 1), 60, function () {
+        //     return Meal::orderBy('id', 'desc')->paginate(10);
+        // });
         return view('livewire.meal-component', compact('meals'));
     }
     public function storeMeal(Request $request)
