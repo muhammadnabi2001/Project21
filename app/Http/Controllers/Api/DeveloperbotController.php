@@ -367,10 +367,10 @@ class DeveloperbotController extends Controller
                 ['text' => 'Cart', 'callback_data' => 'view_cart']
             ];
             if (is_numeric($text)) {
-                $worker=Worker::where('chat_id',$chat_id)->first();
-               $cart=Cart::where('worker_id',$worker->id)->first();
-              
-               $cart->update(['summa'=>$text]);
+                // $worker = Worker::where('chat_id', $chat_id)->first();
+                $cart = Cart::where('chat_id', $chat_id)->first();
+
+                $cart->update(['count' => $text]);
                 Http::post($token . '/sendMessage', [
                     'parse_mode' => 'HTML',
                     'chat_id' => $chat_id,
@@ -384,7 +384,7 @@ class DeveloperbotController extends Controller
                     'parse_mode' => 'HTML',
                     'chat_id' => $chat_id,
                     'text' => "count miqodiri xato kiritildi",
-                    
+
                 ]);
             }
         }
@@ -617,13 +617,13 @@ class DeveloperbotController extends Controller
                     $chatId = $call['message']['chat']['id'];
                     $messageId = $call['message']['message_id'];
                     $mealId = Str::after($calldata, 'add_');
-                    $meal = Meal::findorFail($mealId);
-                    $worker = Worker::where('chat_id', $chatId)->first();
+                    // $meal = Meal::findorFail($mealId);
+                    // $worker = Worker::where('chat_id', $chatId)->first();
                     $cart = Cart::create([
-                        'name' => $meal->name,
-                        'worker_id' => $worker->id,
+                        'chat_id' => $chatId,
                         'date' => Carbon::now()->format('Y-m-d'),
-                        'summa' => 0
+                        'summa' => 0,
+                        'count' => 1
                     ]);
                     CartItem::create([
                         'cart_id' => $cart->id,
@@ -639,8 +639,7 @@ class DeveloperbotController extends Controller
                         'text' => 'Endi miqdorini kiriting>>>',
                     ]);
                 }
-                if(Str::startsWith($calldata, 'view_cart'))
-                {
+                if (Str::startsWith($calldata, 'view_cart')) {
                     $chatId = $call['message']['chat']['id'];
                     $messageId = $call['message']['message_id'];
                     $response = Http::post($token . '/SendMessage', [
@@ -648,8 +647,8 @@ class DeveloperbotController extends Controller
                         'parse_mode' => 'HTML',
                         'text' => 'cart button bosildi',
                     ]);
-                   $cartItems = Cart::all();
-                    if ($cartItems->isEmpty()) {
+                    $carts = Cart::where('chat_id', $chatId)->get();
+                    if ($carts->isEmpty()) {
                         Http::post($token . '/sendMessage', [
                             'chat_id' => $chatId,
                             'parse_mode' => 'HTML',
@@ -657,26 +656,42 @@ class DeveloperbotController extends Controller
                         ]);
                     } else {
                         $cartText = "Savatchangizdagi taomlar:\n";
-                
-                        foreach ($cartItems as $item) {
-                            $cartText .= "- {$item->name}: {$item->summa} ta\n";
+
+                        $totalSum = 0; 
+
+                        foreach ($carts as $cart) {
+                            foreach ($cart->items as $item) {
+                                $mealName = $item->meal->name; 
+                                $mealPrice = $item->meal->price; 
+                                $mealCount = $cart->count; 
+                                $mealTotal = $mealPrice * $mealCount; 
+
+                                $cartText .= "- {$mealName}: {$mealPrice} * {$mealCount} = {$mealTotal} so'm\n";
+
+                                $totalSum += $mealTotal;
+                            }
                         }
-                
-                
+                        $cartText .= "\n<b>Jami summa:</b> {$totalSum} so'm";
+
+
                         Http::post($token . '/sendMessage', [
                             'chat_id' => $chatId,
                             'parse_mode' => 'HTML',
                             'text' => $cartText,
                             'reply_markup' => json_encode([
-                            'inline_keyboard' => [
-                                [
-                                    ['text' => 'Zakas berish', 'callback_data' => "zakas"],
-                                    ['text' => 'Orqaga', 'callback_data' => "ortga"],
-                                ],
-                            ]
-                        ])
+                                'inline_keyboard' => [
+                                    [
+                                        ['text' => 'Zakas berish', 'callback_data' => "zakas_{$chatId}"],
+                                        ['text' => 'Orqaga', 'callback_data' => "ortga"],
+                                    ],
+                                ]
+                            ])
                         ]);
                     }
+                }
+                if(Str::startsWith($calldata, 'view_cart'))
+                {
+                    
                 }
             }
             Log::info('Telegram: ', $data);

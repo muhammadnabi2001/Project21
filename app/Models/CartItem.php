@@ -10,4 +10,12 @@ class CartItem extends Model
         'cart_id',
         'meal_id'
     ];
+    public function cart()
+    {
+        return $this->belongsTo(Cart::class,'cart_id');
+    }
+    public function meal()
+    {
+        return $this->belongsTo(Meal::class,'meal_id');
+    }
 }
