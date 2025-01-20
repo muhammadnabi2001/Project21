@@ -689,9 +689,15 @@ class DeveloperbotController extends Controller
                         ]);
                     }
                 }
-                if(Str::startsWith($calldata, 'view_cart'))
+                if(Str::startsWith($calldata, 'zakas_'))
                 {
-                    
+                    $chatId = $call['message']['chat']['id'];
+                    $messageId = $call['message']['message_id'];
+                    Http::post($token . '/sendMessage', [
+                        'chat_id' => $chatId,
+                        'parse_mode' => 'HTML',
+                        'text' => "Zakas qabul qilidni adminni javobini kuting...",
+                    ]);
                 }
             }
             Log::info('Telegram: ', $data);
