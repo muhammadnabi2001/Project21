@@ -8,6 +8,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Company;
 use App\Models\Meal;
+use App\Models\Order;
 use App\Models\Remember;
 use App\Models\User;
 use App\Models\Verification;
@@ -657,14 +658,14 @@ class DeveloperbotController extends Controller
                     } else {
                         $cartText = "Savatchangizdagi taomlar:\n";
 
-                        $totalSum = 0; 
+                        $totalSum = 0;
 
                         foreach ($carts as $cart) {
                             foreach ($cart->items as $item) {
-                                $mealName = $item->meal->name; 
-                                $mealPrice = $item->meal->price; 
-                                $mealCount = $cart->count; 
-                                $mealTotal = $mealPrice * $mealCount; 
+                                $mealName = $item->meal->name;
+                                $mealPrice = $item->meal->price;
+                                $mealCount = $cart->count;
+                                $mealTotal = $mealPrice * $mealCount;
 
                                 $cartText .= "- {$mealName}: {$mealPrice} * {$mealCount} = {$mealTotal} so'm\n";
 
@@ -689,15 +690,71 @@ class DeveloperbotController extends Controller
                         ]);
                     }
                 }
-                if(Str::startsWith($calldata, 'zakas_'))
-                {
+                if (Str::startsWith($calldata, 'zakas_')) {
                     $chatId = $call['message']['chat']['id'];
                     $messageId = $call['message']['message_id'];
+                    $carts = Cart::where('chat_id', $chatId)->get();
                     Http::post($token . '/sendMessage', [
                         'chat_id' => $chatId,
                         'parse_mode' => 'HTML',
                         'text' => "Zakas qabul qilidni adminni javobini kuting...",
                     ]);
+                    $cartText = "Zakasni ni tasdiqlaysizmi:\n";
+
+                    $totalSum = 0;
+
+                    foreach ($carts as $cart) {
+                        foreach ($cart->items as $item) {
+                            $mealName = $item->meal->name;
+                            $mealPrice = $item->meal->price;
+                            $mealCount = $cart->count;
+                            $mealTotal = $mealPrice * $mealCount;
+
+                            $cartText .= "- {$mealName}: {$mealPrice} * {$mealCount} = {$mealTotal} so'm\n";
+
+                            $totalSum += $mealTotal;
+                        }
+                    }
+                    $cartText .= "\n<b>Jami summa:</b> {$totalSum} so'm";
+
+
+                    Http::post($token . '/sendMessage', [
+                        'parse_mode' => 'HTML',
+                        'chat_id' => '6611982902',
+                        'text' => $cartText,
+                        'reply_markup' => json_encode([
+                            'inline_keyboard' => [
+                                [
+                                    ['text' => 'Tasdiqlash✅', 'callback_data' => "yes_{$chatId}"],
+                                    ['text' => 'Qaytarish❌', 'callback_data' => "no_{$chatId}"],
+                                ],
+                            ]
+                        ])
+                    ]);
+                }
+                if (Str::startsWith($calldata, 'yes')) {
+                    $chatId = $call['message']['chat']['id'];
+                    $workerId = Str::after($calldata, 'yes_');
+                    Http::post($token . '/sendMessage', [
+                        'parse_mode' => 'HTML',
+                        'chat_id' => '6611982902',
+                        'text' => "Zakas tasdiqlandi",
+                    ]);
+                    Http::post($token . '/sendMessage', [
+                        'parse_mode' => 'HTML',
+                        'chat_id' => $workerId,
+                        'text' => "Zakas tasdiqlandi",
+                    ]);
+                    Order::create([
+                        'user_id'=>$workerId,
+                        'status'=>'1',
+                        'shipping_address'=>'1',
+                        'totalprice'=>'56000',
+                        'latitude'=>'12',
+                        'longitude'=>'12',
+                        'payment_status'=>'pending'
+                    ]);
+                    $carts = Cart::where('chat_id', $chatId)->delete();
                 }
             }
             Log::info('Telegram: ', $data);
